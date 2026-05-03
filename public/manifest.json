@@ -10,6 +10,22 @@
   "scope": "/",
   "lang": "id",
   "categories": ["agriculture", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Beranda",
+      "description": "Lihat semua plot lahan",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Kalender Tugas",
+      "short_name": "Kalender",
+      "description": "To-do list harian",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-192.png",

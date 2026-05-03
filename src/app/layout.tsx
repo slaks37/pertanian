@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { StoreProvider } from '@/lib/store'
+import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 
 export const metadata: Metadata = {
   title: 'Smart Farm Dashboard',
@@ -33,6 +34,7 @@ export default function RootLayout({
       </head>
       <body>
         <StoreProvider>
+          <ServiceWorkerRegistrar />
           {children}
         </StoreProvider>
       </body>

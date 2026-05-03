@@ -2,6 +2,7 @@
 
 import { useStore } from '@/lib/store'
 import PlotCard from '@/components/PlotCard'
+import Onboarding, { useOnboarding } from '@/components/Onboarding'
 import { useRouter } from 'next/navigation'
 import { Plus, Sun, Cloud, Droplets, Wind } from 'lucide-react'
 
@@ -16,6 +17,7 @@ function getGreeting() {
 export default function DashboardPage() {
   const { state, getHST } = useStore()
   const router = useRouter()
+  const onboarding = useOnboarding()
 
   const activePlots = state.plots.filter(p => !p.archived)
   const today = new Date().toISOString().split('T')[0]
@@ -25,6 +27,7 @@ export default function DashboardPage() {
 
   return (
     <div className="px-4 py-4 space-y-4">
+      {onboarding.show && <Onboarding onComplete={onboarding.complete} />}
       {/* Greeting */}
       <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-2xl p-4 text-white">
         <p className="text-sm text-green-200 mb-0.5">{getGreeting()},</p>
