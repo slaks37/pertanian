@@ -1,4 +1,4 @@
-import { SensorReading, Task, Photo, ChatMessage } from '@/types'
+import { SensorReading, Task, Photo, ChatMessage, Actuator, AutomationRule, AutoCommand, HarvestPrediction } from '@/types'
 
 function randomBetween(min: number, max: number, decimals = 1): number {
   const val = Math.random() * (max - min) + min
@@ -299,4 +299,240 @@ export function generateDemoChatHistory(plotId: string): ChatMessage[] {
       timestamp: new Date(Date.now() - 1 * 3600000 + 45000).toISOString(),
     },
   ]
+}
+
+export function generateDemoActuators(plotId: string): Actuator[] {
+  const isCabai = plotId === 'plot-1'
+  return [
+    {
+      id: `act-${plotId}-1`,
+      plotId,
+      type: 'pompa_air',
+      name: 'Pompa Irigasi Utama',
+      status: 'off',
+      mode: 'auto',
+      lastTriggeredAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+      lastTriggeredReason: 'Kelembapan tanah turun ke 38% — AI mengaktifkan irigasi 20 menit',
+      durationMinutes: 20,
+    },
+    {
+      id: `act-${plotId}-2`,
+      plotId,
+      type: 'dispenser_pupuk',
+      name: 'Dispenser Pupuk Cair',
+      status: 'off',
+      mode: 'auto',
+      lastTriggeredAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      lastTriggeredReason: isCabai
+        ? 'Jadwal pemupukan NPK fase pembungaan (HST 40)'
+        : 'Defisiensi kalsium terdeteksi — AI mengaktifkan dispenser Ca-B',
+      durationMinutes: 5,
+    },
+    {
+      id: `act-${plotId}-3`,
+      plotId,
+      type: 'penyemprot',
+      name: 'Sprinkler Pestisida',
+      status: 'off',
+      mode: 'manual',
+      lastTriggeredAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+      lastTriggeredReason: 'Analisis foto mendeteksi bercak daun — pencegahan fungisida',
+      durationMinutes: 15,
+    },
+    {
+      id: `act-${plotId}-4`,
+      plotId,
+      type: 'kipas',
+      name: 'Kipas Sirkulasi Udara',
+      status: isCabai ? 'off' : 'on',
+      mode: 'auto',
+      lastTriggeredAt: new Date(Date.now() - 30 * 60000).toISOString(),
+      lastTriggeredReason: isCabai
+        ? 'Suhu udara normal — kipas tidak diperlukan'
+        : 'Kelembapan udara 82% — risiko jamur, AI aktifkan sirkulasi',
+    },
+  ]
+}
+
+export function generateDemoRules(plotId: string): AutomationRule[] {
+  const isCabai = plotId === 'plot-1'
+  return [
+    {
+      id: `rule-${plotId}-1`,
+      plotId,
+      name: 'Irigasi Otomatis',
+      description: `Aktifkan pompa jika kelembapan tanah di bawah ${isCabai ? '55' : '60'}%`,
+      parameter: 'soilMoisture',
+      operator: 'lt',
+      threshold: isCabai ? 55 : 60,
+      actuatorType: 'pompa_air',
+      action: 'on',
+      durationMinutes: 20,
+      enabled: true,
+      triggerCount: 14,
+      lastTriggeredAt: new Date(Date.now() - 6 * 3600000).toISOString(),
+    },
+    {
+      id: `rule-${plotId}-2`,
+      plotId,
+      name: 'Stop Irigasi Berlebih',
+      description: `Matikan pompa jika kelembapan tanah di atas ${isCabai ? '80' : '85'}%`,
+      parameter: 'soilMoisture',
+      operator: 'gt',
+      threshold: isCabai ? 80 : 85,
+      actuatorType: 'pompa_air',
+      action: 'off',
+      enabled: true,
+      triggerCount: 8,
+      lastTriggeredAt: new Date(Date.now() - 5 * 3600000).toISOString(),
+    },
+    {
+      id: `rule-${plotId}-3`,
+      plotId,
+      name: 'Ventilasi Panas',
+      description: 'Aktifkan kipas jika suhu udara di atas 34°C',
+      parameter: 'airTemp',
+      operator: 'gt',
+      threshold: 34,
+      actuatorType: 'kipas',
+      action: 'on',
+      durationMinutes: 30,
+      enabled: true,
+      triggerCount: 6,
+      lastTriggeredAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    },
+    {
+      id: `rule-${plotId}-4`,
+      plotId,
+      name: 'Kontrol Kelembapan Udara',
+      description: 'Aktifkan kipas jika kelembapan udara di atas 85% untuk cegah jamur',
+      parameter: 'airHumidity',
+      operator: 'gt',
+      threshold: 85,
+      actuatorType: 'kipas',
+      action: 'on',
+      durationMinutes: 45,
+      enabled: isCabai ? false : true,
+      triggerCount: isCabai ? 0 : 3,
+      lastTriggeredAt: isCabai ? undefined : new Date(Date.now() - 30 * 60000).toISOString(),
+    },
+    {
+      id: `rule-${plotId}-5`,
+      plotId,
+      name: 'Pemupukan Terjadwal',
+      description: 'Aktifkan dispenser pupuk setiap 3 hari saat fase pertumbuhan aktif',
+      parameter: 'soilMoisture',
+      operator: 'gt',
+      threshold: 50,
+      actuatorType: 'dispenser_pupuk',
+      action: 'on',
+      durationMinutes: 5,
+      enabled: false,
+      triggerCount: 4,
+      lastTriggeredAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    },
+  ]
+}
+
+export function generateDemoCommands(plotId: string): AutoCommand[] {
+  const isCabai = plotId === 'plot-1'
+  const cmds: AutoCommand[] = [
+    {
+      id: `cmd-${plotId}-1`,
+      plotId,
+      timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
+      actuatorType: isCabai ? 'pompa_air' : 'kipas',
+      actuatorName: isCabai ? 'Pompa Irigasi Utama' : 'Kipas Sirkulasi Udara',
+      action: 'on',
+      reason: isCabai
+        ? 'Kelembapan tanah turun ke 38.2% — di bawah ambang batas 55%'
+        : 'Kelembapan udara naik ke 87.1% — risiko infeksi jamur meningkat',
+      triggeredBy: 'ai',
+      sensorParam: isCabai ? 'Kelembapan Tanah' : 'Kelembapan Udara',
+      sensorValue: isCabai ? 38.2 : 87.1,
+      threshold: isCabai ? 55 : 85,
+      durationMinutes: isCabai ? 20 : 45,
+    },
+    {
+      id: `cmd-${plotId}-2`,
+      plotId,
+      timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
+      actuatorType: 'pompa_air',
+      actuatorName: 'Pompa Irigasi Utama',
+      action: 'off',
+      reason: 'Durasi irigasi 20 menit selesai — kelembapan tanah kembali ke 68%',
+      triggeredBy: 'ai',
+      sensorParam: 'Kelembapan Tanah',
+      sensorValue: 68,
+      threshold: 55,
+    },
+    {
+      id: `cmd-${plotId}-3`,
+      plotId,
+      timestamp: new Date(Date.now() - 6 * 3600000).toISOString(),
+      actuatorType: 'pompa_air',
+      actuatorName: 'Pompa Irigasi Utama',
+      action: 'on',
+      reason: 'Penyiraman pagi terjadwal — suhu udara 31°C, kondisi optimal',
+      triggeredBy: 'schedule',
+      durationMinutes: 25,
+    },
+    {
+      id: `cmd-${plotId}-4`,
+      plotId,
+      timestamp: new Date(Date.now() - 26 * 3600000).toISOString(),
+      actuatorType: 'dispenser_pupuk',
+      actuatorName: 'Dispenser Pupuk Cair',
+      action: 'on',
+      reason: isCabai
+        ? 'Pemupukan NPK 16-16-16 terjadwal — HST 41, fase pembungaan aktif'
+        : 'Analisis foto mendeteksi gejala defisiensi kalsium — dispenser Ca-B diaktifkan',
+      triggeredBy: isCabai ? 'schedule' : 'ai',
+      durationMinutes: 5,
+    },
+    {
+      id: `cmd-${plotId}-5`,
+      plotId,
+      timestamp: new Date(Date.now() - 3 * 86400000).toISOString(),
+      actuatorType: 'penyemprot',
+      actuatorName: 'Sprinkler Pestisida',
+      action: 'on',
+      reason: 'Analisis foto AI mendeteksi bercak coklat pada daun — pencegahan antraknos dini',
+      triggeredBy: 'ai',
+      durationMinutes: 15,
+    },
+    {
+      id: `cmd-${plotId}-6`,
+      plotId,
+      timestamp: new Date(Date.now() - 4 * 86400000).toISOString(),
+      actuatorType: 'kipas',
+      actuatorName: 'Kipas Sirkulasi Udara',
+      action: 'on',
+      reason: 'Suhu udara mencapai 36.4°C — di atas ambang batas 34°C',
+      triggeredBy: 'ai',
+      sensorParam: 'Suhu Udara',
+      sensorValue: 36.4,
+      threshold: 34,
+      durationMinutes: 30,
+    },
+  ]
+  return cmds
+}
+
+export function generateHarvestPrediction(plotId: string): HarvestPrediction {
+  const isCabai = plotId === 'plot-1'
+  const hstNow = isCabai ? 42 : 23
+  const targetHST = isCabai ? 85 : 70
+  const daysRemaining = targetHST - hstNow
+  const estimatedDate = new Date(Date.now() + daysRemaining * 86400000)
+  return {
+    plotId,
+    estimatedDate: estimatedDate.toISOString().split('T')[0],
+    confidence: isCabai ? 82 : 74,
+    daysRemaining,
+    reminderEnabled: true,
+    notes: isCabai
+      ? 'Berdasarkan tren pertumbuhan saat ini. Panen pertama HST 80-90, puncak produksi HST 100-120.'
+      : 'Estimasi berdasarkan kondisi pertumbuhan. Perhatikan gejala hawar daun yang terdeteksi — dapat memperlambat panen 5-7 hari.',
+  }
 }

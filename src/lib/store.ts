@@ -1,8 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { AppState, Plot, Task, Photo, ChatMessage, User, TaskStatus } from '@/types'
-import { generateSensorHistory, generateDemoTasks, generateDemoPhotos, generateDemoChatHistory } from './mockData'
+import { AppState, Plot, Task, Photo, ChatMessage, User, TaskStatus, Actuator, AutomationRule, AutoCommand, HarvestPrediction } from '@/types'
+import { generateSensorHistory, generateDemoTasks, generateDemoPhotos, generateDemoChatHistory, generateDemoActuators, generateDemoRules, generateDemoCommands, generateHarvestPrediction } from './mockData'
 
 function getHST(plantingDate: string): number {
   const planted = new Date(plantingDate)
@@ -68,6 +68,22 @@ function buildInitialState(): AppState {
       'plot-1': generateDemoChatHistory('plot-1'),
       'plot-2': generateDemoChatHistory('plot-2'),
     },
+    actuators: {
+      'plot-1': generateDemoActuators('plot-1'),
+      'plot-2': generateDemoActuators('plot-2'),
+    },
+    automationRules: {
+      'plot-1': generateDemoRules('plot-1'),
+      'plot-2': generateDemoRules('plot-2'),
+    },
+    autoCommands: {
+      'plot-1': generateDemoCommands('plot-1'),
+      'plot-2': generateDemoCommands('plot-2'),
+    },
+    harvestPredictions: {
+      'plot-1': generateHarvestPrediction('plot-1'),
+      'plot-2': generateHarvestPrediction('plot-2'),
+    },
   }
 }
 
@@ -85,6 +101,10 @@ interface StoreContextType {
   addPhoto: (photo: Photo) => void
   updatePhotoAnalysis: (photoId: string, analysis: Photo['analysis']) => void
   addMessage: (plotId: string, message: ChatMessage) => void
+  setActuatorStatus: (plotId: string, actuatorId: string, status: Actuator['status'], mode: Actuator['mode']) => void
+  toggleRule: (plotId: string, ruleId: string) => void
+  addAutoCommand: (plotId: string, cmd: AutoCommand) => void
+  updateHarvestReminder: (plotId: string, enabled: boolean) => void
 }
 
 const StoreContext = createContext<StoreContextType | null>(null)
@@ -211,6 +231,52 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }))
   }, [])
 
+  const setActuatorStatus = useCallback((plotId: string, actuatorId: string, status: Actuator['status'], mode: Actuator['mode']) => {
+    setState(prev => ({
+      ...prev,
+      actuators: {
+        ...prev.actuators,
+        [plotId]: (prev.actuators[plotId] ?? []).map(a =>
+          a.id === actuatorId
+            ? { ...a, status, mode, lastTriggeredAt: new Date().toISOString(), lastTriggeredReason: 'Diatur manual oleh petani' }
+            : a
+        ),
+      },
+    }))
+  }, [])
+
+  const toggleRule = useCallback((plotId: string, ruleId: string) => {
+    setState(prev => ({
+      ...prev,
+      automationRules: {
+        ...prev.automationRules,
+        [plotId]: (prev.automationRules[plotId] ?? []).map(r =>
+          r.id === ruleId ? { ...r, enabled: !r.enabled } : r
+        ),
+      },
+    }))
+  }, [])
+
+  const addAutoCommand = useCallback((plotId: string, cmd: AutoCommand) => {
+    setState(prev => ({
+      ...prev,
+      autoCommands: {
+        ...prev.autoCommands,
+        [plotId]: [cmd, ...(prev.autoCommands[plotId] ?? [])].slice(0, 50),
+      },
+    }))
+  }, [])
+
+  const updateHarvestReminder = useCallback((plotId: string, enabled: boolean) => {
+    setState(prev => ({
+      ...prev,
+      harvestPredictions: {
+        ...prev.harvestPredictions,
+        [plotId]: { ...prev.harvestPredictions[plotId], reminderEnabled: enabled },
+      },
+    }))
+  }, [])
+
   const ctx: StoreContextType = {
     state,
     getHST,
@@ -225,6 +291,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addPhoto,
     updatePhotoAnalysis,
     addMessage,
+    setActuatorStatus,
+    toggleRule,
+    addAutoCommand,
+    updateHarvestReminder,
   }
 
   return React.createElement(StoreContext.Provider, { value: ctx }, children)

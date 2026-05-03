@@ -72,6 +72,62 @@ export interface User {
   role: 'petani' | 'koordinator' | 'admin'
 }
 
+export type ActuatorType = 'pompa_air' | 'dispenser_pupuk' | 'penyemprot' | 'kipas'
+export type ActuatorMode = 'manual' | 'auto'
+export type ActuatorStatus = 'on' | 'off'
+
+export interface Actuator {
+  id: string
+  plotId: string
+  type: ActuatorType
+  name: string
+  status: ActuatorStatus
+  mode: ActuatorMode
+  lastTriggeredAt?: string
+  lastTriggeredReason?: string
+  durationMinutes?: number // for timed actuators
+}
+
+export interface AutomationRule {
+  id: string
+  plotId: string
+  name: string
+  description: string
+  parameter: 'soilMoisture' | 'soilTemp' | 'airTemp' | 'airHumidity' | 'lightIntensity' | 'ph'
+  operator: 'lt' | 'gt'
+  threshold: number
+  actuatorType: ActuatorType
+  action: ActuatorStatus
+  durationMinutes?: number
+  enabled: boolean
+  triggerCount: number
+  lastTriggeredAt?: string
+}
+
+export interface AutoCommand {
+  id: string
+  plotId: string
+  timestamp: string
+  actuatorType: ActuatorType
+  actuatorName: string
+  action: ActuatorStatus
+  reason: string
+  triggeredBy: 'ai' | 'manual' | 'schedule'
+  sensorParam?: string
+  sensorValue?: number
+  threshold?: number
+  durationMinutes?: number
+}
+
+export interface HarvestPrediction {
+  plotId: string
+  estimatedDate: string
+  confidence: number
+  daysRemaining: number
+  reminderEnabled: boolean
+  notes: string
+}
+
 export interface AppState {
   user: User | null
   plots: Plot[]
@@ -80,4 +136,8 @@ export interface AppState {
   photos: Photo[]
   sensorData: Record<string, SensorReading[]>
   chatHistory: Record<string, ChatMessage[]>
+  actuators: Record<string, Actuator[]>
+  automationRules: Record<string, AutomationRule[]>
+  autoCommands: Record<string, AutoCommand[]>
+  harvestPredictions: Record<string, HarvestPrediction>
 }

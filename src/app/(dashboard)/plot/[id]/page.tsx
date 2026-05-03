@@ -4,7 +4,7 @@ import { use } from 'react'
 import { useStore } from '@/lib/store'
 import { useRouter } from 'next/navigation'
 import StatusBadge from '@/components/StatusBadge'
-import { Activity, Camera, Calendar, MessageCircle, Droplets, Thermometer, Wind, ChevronRight } from 'lucide-react'
+import { Activity, Camera, Calendar, MessageCircle, Droplets, Thermometer, Wind, ChevronRight, Cpu } from 'lucide-react'
 import clsx from 'clsx'
 
 export default function PlotDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,6 +35,7 @@ export default function PlotDetailPage({ params }: { params: Promise<{ id: strin
     { label: 'Foto', icon: <Camera className="w-6 h-6" />, href: `/plot/${id}/photos`, color: 'bg-purple-100 text-purple-700' },
     { label: 'Kalender', icon: <Calendar className="w-6 h-6" />, href: `/plot/${id}/calendar`, color: 'bg-amber-100 text-amber-700' },
     { label: 'Chat AI', icon: <MessageCircle className="w-6 h-6" />, href: `/plot/${id}/chatbot`, color: 'bg-green-100 text-green-700' },
+    { label: 'Otomasi', icon: <Cpu className="w-6 h-6" />, href: `/plot/${id}/automation`, color: 'bg-violet-100 text-violet-700' },
   ]
 
   const cropEmoji: Record<string, string> = { cabai: '🌶️', tomat: '🍅', lainnya: '🌿' }
@@ -71,7 +72,7 @@ export default function PlotDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Quick nav grid */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         {quickNav.map(item => (
           <button
             key={item.label}
