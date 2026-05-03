@@ -3,8 +3,9 @@
 import { use, useState } from 'react'
 import { useStore } from '@/lib/store'
 import SensorCard from '@/components/SensorCard'
+import { useMqttStream } from '@/hooks/useMqttStream'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Droplets, Thermometer, Sun, Wind, Activity, Wifi, Battery } from 'lucide-react'
+import { Droplets, Thermometer, Sun, Wind, Activity, Wifi, WifiOff, Battery } from 'lucide-react'
 import clsx from 'clsx'
 
 const SENSOR_RANGES = {
@@ -30,7 +31,11 @@ export default function SensorPage({ params }: { params: Promise<{ id: string }>
 
   const plot = state.plots.find(p => p.id === id)
   const readings = state.sensorData[id] ?? []
-  const lastReading = readings[readings.length - 1]
+
+  // Live MQTT stream — overrides lastReading with real-time data when connected
+  const mqtt = useMqttStream(id, plot?.cropType ?? 'cabai', true)
+  const lastReading = mqtt.latest ?? readings[readings.length - 1]
+
   const ranges = SENSOR_RANGES[plot?.cropType ?? 'lainnya']
 
   if (!lastReading) return <div className="p-4 text-gray-500">Data sensor belum tersedia</div>
@@ -62,14 +67,16 @@ export default function SensorPage({ params }: { params: Promise<{ id: string }>
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <Activity className="w-5 h-5 text-green-600" />
+            <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center', mqtt.isConnected ? 'bg-green-100' : 'bg-gray-100')}>
+              <Activity className={clsx('w-5 h-5', mqtt.isConnected ? 'text-green-600' : 'text-gray-400')} />
             </div>
             <div>
               <p className="font-semibold text-gray-900 text-sm">{plot?.nodeId ?? 'NODE-001'}</p>
               <div className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full" />
-                <span className="text-xs text-green-600 font-medium">Online</span>
+                <span className={clsx('w-2 h-2 rounded-full', mqtt.isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-300')} />
+                <span className={clsx('text-xs font-medium', mqtt.isConnected ? 'text-green-600' : 'text-gray-400')}>
+                  {mqtt.isConnected ? 'Live MQTT' : 'Menghubungkan...'}
+                </span>
               </div>
             </div>
           </div>
@@ -79,12 +86,19 @@ export default function SensorPage({ params }: { params: Promise<{ id: string }>
               <span>87%</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Wifi className="w-4 h-4 text-blue-400" />
-              <span>Kuat</span>
+              {mqtt.isConnected
+                ? <Wifi className="w-4 h-4 text-blue-400" />
+                : <WifiOff className="w-4 h-4 text-gray-300" />}
+              <span>{mqtt.isConnected ? 'Kuat' : '–'}</span>
             </div>
           </div>
         </div>
-        <p className="text-xs text-gray-400 mt-2">Update terakhir: {new Date(lastReading.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+        <p className="text-xs text-gray-400 mt-2">
+          {mqtt.lastUpdate
+            ? `Live update: ${mqtt.lastUpdate}`
+            : `Update terakhir: ${new Date(lastReading.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`}
+        </p>
+        {mqtt.error && <p className="text-xs text-amber-500 mt-1">{mqtt.error}</p>}
       </div>
 
       {/* Alerts */}
